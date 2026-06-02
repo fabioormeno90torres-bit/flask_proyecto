@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Productos</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .search-container { max-width: 600px; background: white; margin: 40px auto; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; }
+        .search-form { display: flex; gap: 10px; margin-bottom: 25px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+        .btn-action { padding: 12px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-find { background: #007bff; }
+        .result-box { display: none; background: #f8f9fa; border: 1px solid #e9ecef; padding: 20px; border-radius: 5px; margin-bottom: 25px; }
+        .result-box h3 { margin-top: 0; color: #007bff; }
+        .product-prop { margin: 8px 0; font-size: 15px; color: #495057; }
+        .product-prop strong { color: #212529; }
+        .error-box { display: none; color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 12px; border-radius: 5px; margin-bottom: 25px; text-align: center; }
+        .nav-actions { display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 20px; }
+        .btn-nav { text-decoration: none; padding: 10px 18px; font-size: 14px; border-radius: 5px; color: white; font-weight: bold; }
+        .btn-back { background: #6c757d; }
+        .btn-exit { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <h2>Buscador de Productos</h2>
+        <div class="search-form">
+            <input type="text" id="codigoProducto" placeholder="Ingrese código (Ej: P001, P002...)" autocomplete="off">
+            <button class="btn-action btn-find" onclick="buscarProducto()">Buscar</button>
+        </div>
+
+        <div id="errorContainer" class="error-box"></div>
+
+        <div id="resultContainer" class="result-box">
+            <h3 id="prodNombre"></h3>
+            <p class="product-prop"><strong>Código:</strong> <span id="prodCodigo"></span></p>
+            <p class="product-prop"><strong>Categoría:</strong> <span id="prodCategoria"></span></p>
+            <p class="product-prop"><strong>Descripción:</strong> <span id="prodDescripcion"></span></p>
+            <p class="product-prop"><strong>Precio:</strong> S/ <span id="prodPrecio"></span></p>
+            <p class="product-prop"><strong>Stock disponible:</strong> <span id="prodStock"></span> uds.</p>
+        </div>
+
+        <div class="nav-actions">
+            <a href="{{ url_for('principal') }}" class="btn-nav btn-back">⬅ Regresar al Panel</a>
+            <a href="{{ url_for('logout') }}" class="btn-nav btn-exit">Salir del Sistema 🚪</a>
+        </div>
+    </div>
+
+    <script>
+        async function buscarProducto() {
+            const codigo = document.getElementById('codigoProducto').value;
+            const errorContainer = document.getElementById('errorContainer');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            errorContainer.style.display = 'none';
+            resultContainer.style.display = 'none';
+
+            if(!codigo.trim()) {
+                errorContainer.innerText = "Por favor, ingrese un código válido.";
+                errorContainer.style.display = 'block';
+                return;
+            }
+
+            try {
+                // Petición fetch asíncrona hacia el endpoint de la API REST 
+                const response = await fetch('/api/buscar_producto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo: codigo })
+                });
+
+                const resData = await response.json();
+
+                if (response.ok && resData.status === 'success') {
+                    // Cargar datos dinámicamente en el DOM
+                    document.getElementById('prodNombre').innerText = resData.data.nombre;
+                    document.getElementById('prodCodigo').innerText = resData.data.codigo;
+                    document.getElementById('prodCategoria').innerText = resData.data.categoria;
+                    document.getElementById('prodDescripcion').innerText = resData.data.descripcion;
+                    document.getElementById('prodPrecio').innerText = parseFloat(resData.data.precio).toFixed(2);
+                    document.getElementById('prodStock').innerText = resData.data.stock;
+                    
+                    resultContainer.style.display = 'block';
+                } else {
+                    errorContainer.innerText = resData.message || "Producto no encontrado.";
+                    errorContainer.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Error en la comunicación:", error);
+                errorContainer.innerText = "Error de comunicación con el servidor.";
+                errorContainer.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
